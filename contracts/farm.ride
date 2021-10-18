@@ -2,7 +2,7 @@
 # People deposit their swop.fi lp tokens
 # They are put to farm on swop.fi (dapp-to-dapp)
 # At a certain threshold (thresholdSwopRewards) of harvestable rewards they get claimed (dapp-to-dapp)
-# One guy gets the full rewards of all deposited lp tokens (it will happen pretty often anyways so 1 is enough and no one is losing anything anyway)
+# One random guy that has pool tokens locked gets the full rewards of all deposited lp tokens (it will happen pretty often anyways so 1 is enough and no one is losing anything anyway)
 # Happy people every couple minutes! <3
 
 {-# STDLIB_VERSION 5 #-}
