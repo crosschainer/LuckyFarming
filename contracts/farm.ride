@@ -12,7 +12,7 @@
 
 let lpAsset = base58'Btw3G1j4wQgdp49PTxaFkNvn75dQtqGDM7ejQppHnWC1'
 let rewardAsset = base58'Ehie5xYpeN8op1Cctc6aGUrqx8jq3jtf1DSjXDbfm7aT'
-let depositFee = 1
+let depositFee = 0
 let keyActive = "active"
 let isActive = this.getBooleanValue(keyActive)
 let adminPubKey = base58'DXDY2itiEcYBtGkVLnkpHtDFyWQUkoLJz79uJ7ECbMrA'
@@ -32,7 +32,7 @@ func distributeLuckyRewards() = {
         let amount = assetBalance(dAppAddress, rewardAsset)
         let randomFarmer = base58'TBD' # Get Random Participant Address TODO
         if (amount >= thresholdSwopRewards) then {
-            [ScriptTransfer(Address(randomFarmer), amount, lpAsset)]
+            [ScriptTransfer(Address(randomFarmer), amount - (amount/100*depositFee), lpAsset)]
         }
         else{
             throw("Threshold not reached yet.")
