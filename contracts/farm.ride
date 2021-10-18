@@ -1,0 +1,115 @@
+# luckyfarm.io 
+# The basic idea:
+# People deposit their swop.fi lp tokens
+# They are put to farm on swop.fi (dapp-to-dapp)
+# At a certain threshold (thresholdSwopRewards) of harvestable rewards they get claimed (dapp-to-dapp)
+# One guy gets the full rewards of all deposited lp tokens (rewards / people) (it will happen pretty often anyways so 1 is enough and no one is losing anything anyway)
+# Happy people every couple minutes! <3
+
+{-# STDLIB_VERSION 5 #-}
+{-# CONTENT_TYPE DAPP #-}
+{-# SCRIPT_TYPE ACCOUNT #-}
+
+let lpAsset = base58'Btw3G1j4wQgdp49PTxaFkNvn75dQtqGDM7ejQppHnWC1'
+let rewardAsset = base58'Ehie5xYpeN8op1Cctc6aGUrqx8jq3jtf1DSjXDbfm7aT'
+let depositFee = 1
+let keyActive = "active"
+let isActive = this.getBooleanValue(keyActive)
+let adminPubKey = base58'DXDY2itiEcYBtGkVLnkpHtDFyWQUkoLJz79uJ7ECbMrA'
+let thresholdSwopRewards = 1
+let dAppAddress = this
+
+
+# Someone needs to execute this, dont know how to do it differently
+@Callable(i)
+func distributeLuckyRewards() = {
+    # Harvest at certain reward threshold (thresholdSwopRewards) on swop (dapp to dapp)
+    # Distribute to One Random Guy Rewards: Harvest
+    if !isActive then  
+        throw("DApp is inactive at this moment")
+    else{
+        let rand = toInt(i.transactionId + i.callerPublicKey + lastBlock.generationSignature + toBytes(lastBlock.timestamp) + toBytes(lastBlock.height))
+        let amount = assetBalance(dAppAddress, rewardAsset)
+        let randomFarmer = base58'TBD' # Get Random Participant Address TODO
+        if (amount >= thresholdSwopRewards) then {
+            [ScriptTransfer(Address(randomFarmer), amount, lpAsset)]
+        }
+        else{
+            throw("Threshold not reached yet.")
+        }
+    }
+}
+
+
+@Callable(i)
+func depositLPToken() = {
+    let pmt = value(i.payments[0])  # all tx info    
+    if !isActive then  
+        throw("DApp is inactive at this moment")
+    else if (pmt.assetId == lpAsset) then { # Only allow certain LP token
+        let currentKey = toBase58String(i.callerPublicKey)  # determining caller key
+        let currentAmount = match getInteger(this, currentKey) {  # reading current user's balance from the account state
+            case a:Int => a
+            case _ => 0  # taking zero as a balance value if this is the first time user deposits money
+        }
+        
+        let newAmount = (currentAmount + pmt.amount) - (pmt.amount / 100 * depositFee)  # counting new balance as "old balance + (payment value - deposit fee)"
+        [
+            IntegerEntry(currentKey, newAmount), # updating user's balance in the account state
+            ScriptTransfer(addressFromPublicKey(adminPubKey),depositFee,lpAsset) # that is my part of the cake (1% of all lp deposits)
+        ]  
+        # Put LP tokens in farming on swop (dapp to dapp) TODO
+        
+    }
+    else {
+        throw("Wrong LP token")
+    }
+}
+
+@Callable(i)
+func withdrawLPToken(amount: Int) = {
+    # withdraw function can be invoked by user to "cash out" his lp tokens
+    let currentKey = toBase58String(i.callerPublicKey) 
+    let currentAmount = match getInteger(this, currentKey) {
+        case a:Int => a
+        case _ => 0
+    }
+    let newAmount = currentAmount - amount
+    if !isActive then  
+        throw("DApp is inactive at this moment")
+    else if (amount < 0)  # is user requesting a positive amount?
+        then throw("Can't withdraw negative amount")
+    else if (newAmount < 0)  # does user have enough balance for this withdraw?
+        then throw("Not enough balance")
+    else {
+        [
+            IntegerEntry(currentKey, newAmount),  # saving new balance to the account state
+            ScriptTransfer(i.caller, amount, lpAsset)
+        ]
+    }
+}
+
+@Callable(i)
+func shutdown() =
+    if !isActive then
+        throw("DApp is already suspended.")
+    else if i.callerPublicKey != adminPubKey then
+        throw("Only admin can call this function")
+    else [BooleanEntry(keyActive, false)]
+
+@Callable(i)
+func activate() =
+    if isActive then
+        throw("DApp is already active")
+    else if i.callerPublicKey != adminPubKey then
+        throw("Only admin can call this function")
+    else [
+        BooleanEntry(keyActive, true)
+    ]
+
+@Verifier(tx)
+func verify() = match tx {
+    case _ => {
+        if(adminPubKey == tx.senderPublicKey) then true else false
+    }
+}
