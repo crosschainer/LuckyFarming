@@ -82,6 +82,7 @@ func withdrawLPToken(amount: Int) = {
     else if (newAmount < 0)  # does user have enough balance for this withdraw?
         then throw("Not enough balance")
     else {
+    #Pull Tokens from farming (dapp-to-dapp)
         [
             IntegerEntry(currentKey, newAmount),  # saving new balance to the account state
             ScriptTransfer(i.caller, amount, lpAsset)
