@@ -21,7 +21,7 @@ let currentUserList = this.getStringValue(keyUserList)
 let adminPubKey = base58'DXDY2itiEcYBtGkVLnkpHtDFyWQUkoLJz79uJ7ECbMrA'
 let swopPool = base58'3PHaNgomBkrvEL2QnuJarQVJa71wjw9qiqG'
 let thresholdSwopRewards = 1
-let maxPoolUsers = 100
+let maxPoolUsers = 100 #This is because of string limitation on currentUserList, it can only fit a little over 100 users and need these for randomization
 let dAppAddress = this
 
 
