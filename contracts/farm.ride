@@ -19,6 +19,7 @@ let currentUserCount = this.getIntegerValue(keyUserCount)
 let keyUserList = "userslist"
 let currentUserList = this.getStringValue(keyUserList)
 let adminPubKey = base58'DXDY2itiEcYBtGkVLnkpHtDFyWQUkoLJz79uJ7ECbMrA'
+let swopPool = base58'3PHaNgomBkrvEL2QnuJarQVJa71wjw9qiqG'
 let thresholdSwopRewards = 1
 let maxPoolUsers = 100
 let dAppAddress = this
@@ -32,6 +33,7 @@ func distributeLuckyRewards() = {
     if !isActive then  
         throw("DApp is inactive at this moment")
     else{
+        #strict z = invoke(swopPool,foo,args,[AttachedPayment(lpAsset,amount)]) HARVEST
         let randToHigh = toInt(i.transactionId + i.callerPublicKey + lastBlock.generationSignature + toBytes(lastBlock.timestamp) + toBytes(lastBlock.height))
         let rand = randToHigh % currentUserCount
         let amount = assetBalance(dAppAddress, rewardAsset)
@@ -78,8 +80,8 @@ func depositLPToken() = {
         else{
             throw("Maximum allowed users:" + toString(maxPoolUsers))
         }
-        # Put LP tokens in farming on swop (dapp to dapp) TODO
         
+        #strict z = invoke(swopPool,foo,args,[AttachedPayment(lpAsset,amount)]) PUT IN FARMING
     }
     else {
         throw("Wrong LP token")
@@ -127,6 +129,7 @@ func withdrawLPToken(amount: Int) = {
                 ScriptTransfer(i.caller, amount, lpAsset)
             ]
         }
+        #strict z = invoke(swopPool,foo,args,[AttachedPayment(lpAsset,amount)]) PULL FROM FARMING AND SEND BACK TO USER
     }
 }
 
