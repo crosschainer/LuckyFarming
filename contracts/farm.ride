@@ -138,12 +138,9 @@ func withdrawLPToken(amount: Int) = {
 
 @Callable(i)
 func shutdown() =
-    if isDefined(isActive) then
-        if(isActive == false) then
-            throw("DApp is already suspended.")
-        else{
-            [BooleanEntry(keyActive, false)]
-        }
+   
+    if(isActive == false) then
+        throw("DApp is already suspended.")
     else if i.callerPublicKey != adminPubKey then
         throw("Only admin can call this function")
     else [BooleanEntry(keyActive, false)]
@@ -160,6 +157,13 @@ func activate() =
             StringEntry(keyUserList, "")
             ]
         }
+    else if isDefined(isActive) == false then{
+        [
+        BooleanEntry(keyActive, true),
+        IntegerEntry(keyUserCount, 0),
+        StringEntry(keyUserList, "")
+        ]
+    }
     else if i.callerPublicKey != adminPubKey then
         throw("Only admin can call this function")
     else [
