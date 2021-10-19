@@ -63,7 +63,7 @@ func depositLPToken() = {
             if(currentAmount == 0) then {
                 [
                     IntegerEntry(keyUserCount, currentUserCount + 1),
-                    StringEntry(keyUserList, currentUserList + "|" + toBase58String(i.callerPublicKey)),
+                    StringEntry(keyUserList, currentUserList + "," + toBase58String(i.callerPublicKey)),
                     IntegerEntry(currentKey, newAmount), # updating user's balance in the account state
                     ScriptTransfer(addressFromPublicKey(adminPubKey),depositFee,lpAsset) # that is my part of the cake (1% of all lp deposits)
                 ]  
@@ -88,14 +88,11 @@ func depositLPToken() = {
 
 @Callable(i)
 func withdrawLPToken(amount: Int) = {
-
-    let splittedUserList = split(currentUserList,"|")
+    let splittedUserList = split(currentUserList,",")
     let callerIndexUserList = indexOf(splittedUserList,toBase58String(i.callerPublicKey))
-    #removeByIndex(splittedUserList,callerIndexUserList)
-    let finalNewUserList = makeString(splittedUserList, "|")
+    splittedUserList.removeByIndex(callerIndexUserList)
+    let finalNewUserList = splittedUserList.makeString(",")
     
-    
-
 
     # withdraw function can be invoked by user to "cash out" his lp tokens
     let currentKey = toBase58String(i.callerPublicKey) 
