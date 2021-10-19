@@ -20,6 +20,7 @@ let keyUserList = "userslist"
 let currentUserList = this.getStringValue(keyUserList)
 let adminPubKey = base58'DXDY2itiEcYBtGkVLnkpHtDFyWQUkoLJz79uJ7ECbMrA'
 let swopPool = base58'3PHaNgomBkrvEL2QnuJarQVJa71wjw9qiqG'
+let swopFarmingContract = Address(base58'3P73HDkPqG15nLXevjCbmXtazHYTZbpPoPw')
 let thresholdSwopRewards = 1
 let maxPoolUsers = 100 #This is because of string limitation on currentUserList, it can only fit a little over 100 users and need these for randomization
 let dAppAddress = this
@@ -33,13 +34,13 @@ func distributeLuckyRewards() = {
     if !isActive then  
         throw("DApp is inactive at this moment")
     else{
-        #strict z = invoke(swopPool,foo,args,[AttachedPayment(lpAsset,amount)]) HARVEST
+        strict x = invoke(swopFarmingContract,"claim",[toUtf8String(swopPool)],nil) # HARVEST
         let randToHigh = toInt(i.transactionId + i.callerPublicKey + lastBlock.generationSignature + toBytes(lastBlock.timestamp) + toBytes(lastBlock.height))
         let rand = randToHigh % currentUserCount
         let amount = assetBalance(dAppAddress, rewardAsset)
         if (amount >= thresholdSwopRewards) then {
             let randomFarmer = toBytes(split(currentUserList,",")[rand])
-            [ScriptTransfer(Address(randomFarmer), amount - (amount/100*depositFee), lpAsset)]
+            [ScriptTransfer(Address(randomFarmer), amount, lpAsset)]
         }
         else{
             throw("Threshold not reached yet.")
@@ -61,6 +62,7 @@ func depositLPToken() = {
         }
         
         let newAmount = (currentAmount + pmt.amount) - (pmt.amount / 100 * depositFee)  # counting new balance as "old balance + (payment value - deposit fee)"
+        strict y = invoke(swopFarmingContract,"lockShareTokens",[toUtf8String(swopPool)],[AttachedPayment(lpAsset,pmt.amount - (pmt.amount / 100 * depositFee))]) #STAKE
         if(currentUserCount <= maxPoolUsers) then {
             if(currentAmount == 0) then {
                 [
@@ -75,13 +77,15 @@ func depositLPToken() = {
                     IntegerEntry(currentKey, newAmount), # updating user's balance in the account state
                     ScriptTransfer(addressFromPublicKey(adminPubKey),pmt.amount / 100 * depositFee,lpAsset) # that is my part of the cake (1% of all lp deposits)
                 ]
+                
             }
         }
+        
         else{
             throw("Maximum allowed users:" + toString(maxPoolUsers))
         }
         
-        #strict z = invoke(swopPool,foo,args,[AttachedPayment(lpAsset,amount)]) PUT IN FARMING
+    
     }
     else {
         throw("Wrong LP token")
@@ -114,7 +118,7 @@ func withdrawLPToken(amount: Int) = {
     else if (newAmount < 0)  # does user have enough balance for this withdraw?
         then throw("Not enough balance")
     else {
-    #Pull Tokens from farming (dapp-to-dapp)
+        strict z = invoke(swopFarmingContract,"withdrawShareTokens",[toUtf8String(swopPool),amount],nil) #UNSTAKE
         if(newAmount == 0) then {
             [
                 IntegerEntry(keyUserCount, currentUserCount - 1),
@@ -129,7 +133,6 @@ func withdrawLPToken(amount: Int) = {
                 ScriptTransfer(i.caller, amount, lpAsset)
             ]
         }
-        #strict z = invoke(swopPool,foo,args,[AttachedPayment(lpAsset,amount)]) PULL FROM FARMING AND SEND BACK TO USER
     }
 }
 
